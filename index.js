@@ -1,24 +1,25 @@
+// 모듈 불러오기
 var express = require("express");
 var request = require("request");
 var bodyParser = require("body-parser");
 var jsxml = require("node-jsxml");
 
-
+// 네임스페이스 설정 - XML 파싱용
 var Namespace = jsxml.Namespace,
   QName = jsxml.QName,
   XML = jsxml.XML,
   XMLList = jsxml.XMLList;
 
-
+ // express 모듈 설정
 var app = express();
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.listen((process.env.PORT || 5000));
 
+/* 요청시 실행 하는 부분  */
 app.get("/", function (req, res){
   res.send("Deployed!");
 });
-
 
 app.get("/webhook", function (req, res) {
   if (req.query["hub.verify_token"] === process.env.VERIFICATION_TOKEN) {
@@ -55,22 +56,20 @@ app.post('/webhook', function (req, res) {
   }
 });
 
-
-
 /*
-전역변수임
+전역변수
 */
 
-var data_title = new Array();
-var data_arr = new Array();
-var data_img_link = new Array();
-var data_count = 0;
-var data_check = 0; // 관광인지 음식인지
+var data_title = new Array(); // 장소의 이름을 가져옴
+var data_arr = new Array(); // 장소의 주소를 가져옴
+var data_img_link = new Array(); // 이미지 링크를 가져옴
+var data_count = 0; // 데이터 수량
+var data_check = 0; // 관광인지 음식인지 구별용
 
 /*-----------------*/
 
 
-
+// 메세지를 받을때의 함수 - 메세지에 따라 보여주는 데이터를 수정
 function receivedMessage(event) {
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
@@ -107,42 +106,6 @@ function receivedMessage(event) {
       sendTextMessage(senderID, "무슨 말씀을 하시는건지 모르겠어요 ㅠㅠ ");
       setTimeout(function(){sendCategory2(senderID);},1500);
   }
-    // switch (messageText) {
-    //
-    //   case '안녕':
-    //     sendTextMessage(senderID, "안녕하세요 만나서 반갑습니다!");
-    //     break;
-    //
-    //     case '이게 뭐야?':
-    //     sendTextMessage(senderID,"이 앱은 위치를 전송하면 근처 관광지 & 음식점 을 알려주는 앱입니다.");
-    //     delayText(senderID,"본 앱은 위치정보를 사용하기떄문에, GPS를 켜주세요",2000);
-    //     break;
-    //     case '무슨 건지 알려줘':
-    //     sendTextMessage(senderID,"이 앱은 위치를 전송하면 근처 관광지 & 음식점 을 알려주는 앱입니다.");
-    //     delayText(senderID,"본 앱은 위치정보를 사용하기떄문에, GPS를 켜주세요",2000);
-    //     break;
-    //     case '이게 뭐야?':
-    //     sendTextMessage(senderID,"이 앱은 위치를 전송하면 근처 관광지 & 음식점 을 알려주는 앱입니다.");
-    //     delayText(senderID,"본 앱은 위치정보를 사용하기떄문에, GPS를 켜주세요",2000);
-    //     break;
-    //
-    //     case '관광정보 알려줘':
-    //     sendCategory(senderID);
-    //     break;
-    //     case '관광':
-    //     sendCategory(senderID);
-    //     break;
-    //     case '근처 관광지 알려줘':
-    //     sendCategory(senderID);
-    //     break;
-    //     case '관광지':
-    //     sendCategory(senderID);
-    //     break;
-    //   default:
-    //     sendTextMessage(senderID, "뭐라고?");
-    //     break;
-    // }
-
 
 
   } else if (messageAttachments) {
@@ -160,47 +123,15 @@ function receivedMessage(event) {
 
     }
 
-
-
-
-
-
-
   }
 }
 
-
-function receivedPostback(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var timeOfPostback = event.timestamp;
-
-  var payload = event.postback.payload;
-
-
-  if(payload){
-    switch(payload){
-
-      case "Get Started":
-        sendTextMessage(senderID, "이봐 자네");
-        delayText(senderID, "(콜록)", 1000);
-        delayText(senderID, "만나서 반가워", 2500);
-        delayText(senderID, "난 벤자민이라고 해", 3500)
-        delayText(senderID, "편하게 자민이라고 불러", 4500)
-        delayText(senderID, "힘들 때마다 나한테 찾아오면 힘을 줄게", 6000)
-        delayText(senderID, "요즘 기분은 어때?", 7000)
-        break;
-      default:
-        break;
-    }
-  }
-}
-
+// Delay 시킨후 전송하는 함수
 function delayText(senderID, say, time){
   setTimeout(function() {sendTextMessage(senderID, say);}, time);
 }
 
-// 관광 & 음식
+// 관광 & 음식을 선택하게 하는 카테고리 함수
 function sendCategory2(recipientId){
     var messageData = {
       recipient: {
@@ -253,9 +184,10 @@ function sendCategory(recipientId){
 }
 
 
-
+// 위치 전송을 통해 받은 데이터를 OpenAPI를 호출해 보여줌
 function sendlocation(posX,posY,recipientId){
 
+  // 가져올 api 데이터의 경로, 그리고 위치를 보냄
   var url = 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/locationBasedList';
   var queryParams = '?' + encodeURIComponent('ServiceKey') + '=umfGiqjtzOMarryKchlVrnqw7%2BGPqeV1bDPWigHtwAFpAB8d5lfQ8TXoBvRDCRecXTrmkbz24APGWQR0kPY3Ow%3D%3D'; /* Service Key*/
   queryParams += '&' + encodeURIComponent('ServiceKey') + '=' + encodeURIComponent('SERVICE_KEY'); /* 서비스인증 */
@@ -269,27 +201,26 @@ function sendlocation(posX,posY,recipientId){
   queryParams += '&' + encodeURIComponent('mapY') + '=' + encodeURIComponent(posX); /* 37.534712GPS Y좌표(WGS84 경도좌표) */
   queryParams += '&' + encodeURIComponent('radius') + '=' + encodeURIComponent('500'); /* 거리반경(단위m),Max값 20000m=20Km */
   queryParams += '&' + encodeURIComponent('listYN') + '=' + encodeURIComponent('Y'); /* 목록구분(Y=목록,N=개수) */
-
+ // api 주소를 요청
   request({
       url: url + queryParams,
       method: 'GET'
   }, function (error, response, body) {
-      //console.log('Status', response.statusCode);
-      //console.log('Headers', JSON.stringify(response.headers));
-      //  var a = JSON.stringify(response.body.items.item);
-        //console.log(a);
+        // 데이터를 xml로 가져 오므로, xml 태그의 child를 따라, 원하는 데이터 추출
   var xml = new XML(body);
       var body1 = xml.child('body');
       var items = body1.child('items');
       var item = items.child('item');
 var count = body1.child('totalCount').toString();
-//sendTextMessage(recipientId, count);
+    
+    // 데이터가 여러개인경우, 여러번 실행을 위해 each 실행
     item.each(function(msg, index){
     //item is an XML
     var name = msg.child('title').toString();
     var addr = msg.child('addr1').toString();
     var img = msg.child('firstimage').toString();
     var list = msg.child('cat1').toString();
+    // 음식점인지, 관광지인지 선별
     if(data_check==1&&list=="A05"){
       data_count++;
     data_title.push(name);
@@ -302,23 +233,22 @@ var count = body1.child('totalCount').toString();
     data_arr.push(addr);
     data_img_link.push(img);
     }
-    //sendImage(recipientId,a);
-  //  sendTextMessage(recipientId,b);
 
   });
-  //sendTextMessage(recipientId,data_title.length);
+// 데이터가 있으면, 출력
   if(data_title.length!=0){cate(recipientId);}
+  //데이터가 없는경우,
 else{
   if(data_check==1)sendTextMessage(recipientId,"주변에 음식점이 없습니다");
   if(data_check==2)sendTextMessage(recipientId,"주변에 관광지가 없습니다");
-        //sendTextMessage(recipientId ,msg);
+      
       }
 
     });
 
   }
 
-
+// 이미지 전송용 함수
 function sendImage(recipientId, image){
 
   var messageData = {
@@ -338,7 +268,7 @@ function sendImage(recipientId, image){
   callSendAPI(messageData);
 }
 
-
+// 텍스트 타입 전송용 함수
 function sendTextMessage(recipientId, messageText) {
   var messageData = {
     recipient: {
@@ -377,7 +307,7 @@ function sendTypingOff(recipientId) {
 
   setTimeout(function() {callSendAPI(messageData)}, 400)
 }
-
+// 출력
 function cate(recipientId) {
   var object_title = "";
 var k = data_title.length;
@@ -409,82 +339,7 @@ data_arr = new Array();
 data_img_link = new Array();
 data_count = 0;
 data_check = 0;
-  /*var messageData2 = {
-  "recipient":{
-    "id":recipientId
-  },
-  "message":{
-    "attachment":{
-      "type":"template",
-      "payload":{
-        "template_type":"generic",
-        "elements":[
-          {
-           "title":data_title[0],
-           "image_url":data_img_link[0],
-           "subtitle":data_arr[0],
 
-          },
-          {
-          "title":"Welcome to Peter\'s Hats",
-          "image_url":"https://cdn.mirror.wiki/http://www.atweekly.com/news/photo/200804/9057_6699_369.jpg",
-          "subtitle":"We\'ve got the right hat for everyone.",
-          "default_action": {
-            "type": "web_url",
-            "url": "http://naver.com/",
-
-
-          }
-
-        },
-        {
-        "title":"Welcome to Peter\'s Hats",
-        "image_url":"https://cdn.mirror.wiki/http://www.atweekly.com/news/photo/200804/9057_6699_369.jpg",
-        "subtitle":"We\'ve got the right hat for everyone.",
-        "default_action": {
-          "type": "web_url",
-          "url": "http://naver.com/",
-
-
-        }
-
-      }
-
-        ]
-
-      }
-    }
-  }
-};*/
-/*
-
-{
- "title":"Welcome to Peter\'s Hats",
- "image_url":"https://cdn.mirror.wiki/http://www.atweekly.com/news/photo/200804/9057_6699_369.jpg",
- "subtitle":"We\'ve got the right hat for everyone.",
- "default_action": {
-   "type": "web_url",
-   "url": "http://naver.com/",
-
-
- }
-
-},
-{
-"title":"Welcome to Peter\'s Hats",
-"image_url":"https://cdn.mirror.wiki/http://www.atweekly.com/news/photo/200804/9057_6699_369.jpg",
-"subtitle":"We\'ve got the right hat for everyone.",
-"default_action": {
-  "type": "web_url",
-  "url": "http://naver.com/",
-
-
-}
-
-}
-
-
-*/
      sendTypingOn(recipientId);
       callSendAPI(messageData);
 
@@ -493,7 +348,7 @@ data_check = 0;
 
 
 
-
+//facebook api 호출
 function callSendAPI(messageData) {
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
